@@ -511,4 +511,14 @@ export const handleCreateMessages = async (
 
     setChatMessages(finalChatMessages)
   }
+
+  try {
+    await fetch("/api/chat/memory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatId: currentChat.id })
+    })
+  } catch (error) {
+    console.error("Failed to update chat memory", error)
+  }
 }

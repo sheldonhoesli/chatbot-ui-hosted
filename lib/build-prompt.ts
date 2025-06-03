@@ -1,5 +1,6 @@
 import { Tables } from "@/supabase/types"
 import { ChatPayload, MessageImage } from "@/types"
+import { getChatMemory } from "@/db/chat-memory"
 import { encode } from "gpt-tokenizer"
 import { getBase64FromDataURL, getMediaTypeFromDataURL } from "@/lib/utils"
 
@@ -7,7 +8,8 @@ const buildBasePrompt = (
   prompt: string,
   profileContext: string,
   workspaceInstructions: string,
-  assistant: Tables<"assistants"> | null
+  assistant: Tables<"assistants"> | null,
+  memory: string
 ) => {
   let fullPrompt = ""
 
@@ -44,11 +46,19 @@ export async function buildFinalMessages(
     chatFileItems
   } = payload
 
+  let memory = ""
+  const firstMessage = chatMessages.find(m => m.message.chat_id)
+  if (firstMessage) {
+    const memoryRow = await getChatMemory(firstMessage.message.chat_id)
+    memory = memoryRow?.content || ""
+  }
+
   const BUILT_PROMPT = buildBasePrompt(
     chatSettings.prompt,
     chatSettings.includeProfileContext ? profile.profile_context || "" : "",
     chatSettings.includeWorkspaceInstructions ? workspaceInstructions : "",
-    assistant
+    assistant,
+    memory
   )
 
   const CHUNK_SIZE = chatSettings.contextLength
